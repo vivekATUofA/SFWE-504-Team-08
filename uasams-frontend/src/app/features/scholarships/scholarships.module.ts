@@ -2,15 +2,15 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { ScholarshipsRoutingModule } from './scholarships-routing.module';
-import { ScholarshipsComponent } from './scholarships.component'; // Import the new component
+import { ScholarshipsComponent } from './scholarships.component';
 
 @NgModule({
-  // Declarations array is empty or removed for standalone components
+  // Since ScholarshipsComponent is standalone, we keep declarations empty
   declarations: [], 
   imports: [
     CommonModule,
     ScholarshipsRoutingModule,
-    ScholarshipsComponent // Import the standalone component
+    ScholarshipsComponent // Import the standalone component directly
   ]
 })
 export class ScholarshipsModule { }

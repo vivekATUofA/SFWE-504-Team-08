@@ -1,25 +1,35 @@
-import { Injectable } from '@angular/core';
+import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../../src/environment' 
+import { environment } from '../../../../src/environment';
 import { tap } from 'rxjs/operators';
-import { Observable } from 'rxjs';
-import { Router } from '@angular/router'; // Import Router for forced logout/redirect
+import { Observable, of } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private baseUrl = `${environment.apiUrl}/auth`;
+  private baseUrl = `${environment.apiBaseUrl}/auth`;
+  private TOKEN_KEY = 'token';
+  private USER_KEY = 'user';
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
+
+  // CRITICAL HELPER: Prevents crashing on the server
+  private isStorageAvailable(): boolean {
+    return typeof localStorage !== 'undefined';
+  }
 
   login(credentials: { email: string; password: string }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/login`, credentials).pipe(
       tap(res => {
-        if (res && res.token) {
-          localStorage.setItem('token', res.token);
-          // Assuming Spring returns a 'user' object with role info
-          localStorage.setItem('user', JSON.stringify(res.user || null)); 
+        if (this.isStorageAvailable() && res && res.token) {
+          localStorage.setItem(this.TOKEN_KEY, res.token);
+          localStorage.setItem(this.USER_KEY, JSON.stringify(res.user || null));
         }
       })
     );
@@ -30,21 +40,33 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    this.router.navigate(['/auth/login']); // Redirect user after logging out
+    if (this.isStorageAvailable()) {
+      localStorage.removeItem(this.TOKEN_KEY);
+      localStorage.removeItem(this.USER_KEY);
+    }
+    this.router.navigate(['/auth/login']);
   }
 
+  // THIS METHOD CAUSES THE CRASH IF NOT PROTECTED
   getToken(): string | null {
-    return localStorage.getItem('token');
+    if (this.isStorageAvailable()) {
+      return localStorage.getItem(this.TOKEN_KEY);
+    }
+    return null;
   }
 
   isLoggedIn(): boolean {
-    return !!this.getToken();
+    if (this.isStorageAvailable()) {
+      return !!this.getToken();
+    }
+    return false;
   }
 
   getCurrentUser(): any | null {
-    const u = localStorage.getItem('user');
-    return u ? JSON.parse(u) : null;
+    if (this.isStorageAvailable()) {
+      const u = localStorage.getItem(this.USER_KEY);
+      return u ? JSON.parse(u) : null;
+    }
+    return null;
   }
 }

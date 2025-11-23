@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environment';
 
 // The base API URL is defined in the environment file
-const BASE_URL = environment.apiUrl;
+const BASE_URL = environment.apiBaseUrl;
 
 @Injectable({
   providedIn: 'root'

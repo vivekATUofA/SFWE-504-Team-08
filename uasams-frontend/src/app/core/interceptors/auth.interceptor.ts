@@ -14,9 +14,10 @@ export class AuthInterceptor implements HttpInterceptor {
   constructor(private authService: AuthService) {}
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    const token = this.authService.getToken(); 
+    // accessing getToken() is now safe because we fixed AuthService
+    const token = this.authService.getToken();
 
-    if (token) {
+    if (token && !request.url.includes('/auth/login') && !request.url.includes('/auth/register')) {
       request = request.clone({
         setHeaders: {
           Authorization: `Bearer ${token}`

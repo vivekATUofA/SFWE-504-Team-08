@@ -20,13 +20,9 @@ import { AuthInterceptor } from './core/interceptors/auth.interceptor';
   imports: [
     BrowserModule,
     AppRoutingModule,
-    
-    // Core dependencies
     HttpClientModule, 
     FormsModule,
     ReactiveFormsModule,
-
-    // Custom Modules
     CoreModule,
     SharedModule
   ],
