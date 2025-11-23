@@ -1,31 +1,41 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { environment } from 'src/environments/environment';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environment';
+
+// The base API URL is defined in the environment file
+const BASE_URL = environment.apiUrl;
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  base = environment.apiBaseUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
-  get<T>(path: string, params?: any): Observable<T> {
-    const url = `${this.base}/${path}`;
-    return this.http.get<T>(url, { params });
+  private formatErrors(error: any) {
+    // Basic error handler for consistent reporting
+    console.error('API Error:', error);
+    return new Observable(observer => observer.error(error));
   }
 
-  post<T>(path: string, body: any): Observable<T> {
-    const url = `${this.base}/${path}`;
-    return this.http.post<T>(url, body);
+  // Generic GET request
+  get(path: string, params: HttpParams = new HttpParams()): Observable<any> {
+    return this.http.get(`${BASE_URL}${path}`, { params });
   }
 
-  put<T>(path: string, body: any): Observable<T> {
-    return this.http.put<T>(`${this.base}/${path}`, body);
+  // Generic POST request
+  post(path: string, body: Object = {}): Observable<any> {
+    return this.http.post(`${BASE_URL}${path}`, body);
   }
 
-  delete<T>(path: string): Observable<T> {
-    return this.http.delete<T>(`${this.base}/${path}`);
+  // Generic PUT request
+  put(path: string, body: Object = {}): Observable<any> {
+    return this.http.put(`${BASE_URL}${path}`, body);
+  }
+
+  // Generic DELETE request
+  delete(path: string): Observable<any> {
+    return this.http.delete(`${BASE_URL}${path}`);
   }
 }

@@ -1,41 +1,58 @@
-import { Component } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
-import { AuthService } from 'src/app/core/services/auth.service';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common'; // Provides *ngIf and NgClass
+import { AuthService } from '../../../../../src/app/core/services/auth.service';
 
 @Component({
   selector: 'app-login',
+  standalone: true, 
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss']
+  // Removed 'styleUrls' to resolve the file not found error.
+  imports: [
+    CommonModule,        
+    ReactiveFormsModule  
+  ]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
+  form: FormGroup;
   loading = false;
-  errorMessage = '';
+  errorMessage: string | null = null;
 
-  form = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required]
-  });
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) {
+    if (this.authService.isLoggedIn()) {
+      this.router.navigate(['/scholarships']);
+    }
 
-  constructor(private fb: FormBuilder, private auth: AuthService, private router: Router) {}
+    this.form = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', Validators.required]
+    });
+  }
+
+  ngOnInit(): void { }
 
   login(): void {
-    this.errorMessage = '';
     if (this.form.invalid) {
-      this.errorMessage = 'Please enter valid email and password.';
+      this.form.markAllAsTouched();
       return;
     }
 
     this.loading = true;
+    this.errorMessage = null;
 
-    this.auth.login(this.form.value).subscribe({
+    this.authService.login(this.form.value).subscribe({
       next: () => {
-        this.loading = false;
-        this.router.navigate(['/']); // change to dashboard if you have one
+        this.router.navigate(['/scholarships']);
       },
-      error: (err) => {
+      error: (err: any) => { 
         this.loading = false;
-        this.errorMessage = err?.error?.message || 'Invalid email or password';
+        this.errorMessage = err.error?.message || 'Login failed. Check your credentials.';
+        console.error('Login Error:', err);
       }
     });
   }
