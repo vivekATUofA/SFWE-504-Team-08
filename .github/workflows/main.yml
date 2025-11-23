@@ -1,0 +1,47 @@
+# .github/workflows/deploy.yml
+name: Angular Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # Trigger on pushes to the main branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          # Set cache working directory to the Angular project subdirectory
+          cache-dependency-path: uasams-frontend/package-lock.json
+
+      - name: Install Dependencies
+        # Run install command from the Angular project subdirectory
+        run: npm ci
+        working-directory: uasams-frontend 
+
+      - name: Build Angular Production App
+        # Set the Base HREF to /<REPO_NAME>/<SUBDIRECTORY>/
+        # This is the crucial fix for subdirectories
+        run: npx ng build --configuration production --base-href /${{ github.event.repository.name }}/uasams-frontend/
+        working-directory: uasams-frontend 
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} 
+          branch: gh-pages 
+          # The correct path is inside the subdirectory, then inside dist/project-name/browser
+          folder: uasams-frontend/dist/uasams-frontend/browser
