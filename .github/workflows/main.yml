@@ -4,7 +4,7 @@ name: Angular Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main # Trigger on pushes to the main branch
+      - develop # Trigger on pushes to the main branch
 
 jobs:
   build-and-deploy:
