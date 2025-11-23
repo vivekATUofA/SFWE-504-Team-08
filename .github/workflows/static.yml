@@ -10,7 +10,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     
-    # Permissions are required for the deployment token
     permissions:
       contents: write
       pages: write
@@ -23,23 +22,26 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20 # Use a current LTS version of Node.js
+          node-version: 20
           cache: 'npm'
+          # Set cache working directory to the Angular project subdirectory
+          cache-dependency-path: uasams-frontend/package-lock.json
 
       - name: Install Dependencies
+        # Run install command from the Angular project subdirectory
         run: npm ci
+        working-directory: uasams-frontend 
 
       - name: Build Angular Production App
-        run: npx ng build --configuration production --base-href /${{ github.event.repository.name }}/
-        # The base-href sets the path to /<REPO-NAME>/, which is CRITICAL for GitHub Pages.
-        # This assumes your project name in angular.json is the default.
+        # Set the Base HREF to /<REPO_NAME>/<SUBDIRECTORY>/
+        # This is the crucial fix for subdirectories
+        run: npx ng build --configuration production --base-href /${{ github.event.repository.name }}/uasams-frontend/
+        working-directory: uasams-frontend 
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          # The token is automatically provided by GitHub Actions
           token: ${{ secrets.GITHUB_TOKEN }} 
-          # The branch the static files will be pushed to
           branch: gh-pages 
-          # The directory where ng build placed the output files
-          folder: dist/${{ github.event.repository.name }}/browser
+          # The correct path is inside the subdirectory, then inside dist/project-name/browser
+          folder: uasams-frontend/dist/uasams-frontend/browser
