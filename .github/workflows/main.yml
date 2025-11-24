@@ -1,47 +1,48 @@
-# .github/workflows/deploy.yml
-name: Angular Deploy to GitHub Pages
+name: Deploy Angular Frontend (Develop Branch)
 
 on:
   push:
     branches:
-      - develop # Trigger on pushes to the main branch
+      - develop # ➡️ CRUCIAL: Only runs when code is pushed to the 'develop' branch
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
-
     steps:
-      - name: Checkout Code
+      - name: Checkout code
+        # Checks out the repository and allows subsequent steps to access the files
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
+        # Ensures the environment has the necessary Node.js version
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-          # Set cache working directory to the Angular project subdirectory
-          cache-dependency-path: uasams-frontend/package-lock.json
+          node-version: '20'
 
-      - name: Install Dependencies
-        # Run install command from the Angular project subdirectory
-        run: npm ci
-        working-directory: uasams-frontend 
+      - name: Install dependencies
+        # 1. The 'working-directory' tells the runner to execute the command inside 'uasams-frontend'
+        run: npm install
+        working-directory: uasams-frontend
 
-      - name: Build Angular Production App
-        # Set the Base HREF to /<REPO_NAME>/<SUBDIRECTORY>/
-        # This is the crucial fix for subdirectories
-        run: npx ng build --configuration production --base-href /${{ github.event.repository.name }}/uasams-frontend/
-        working-directory: uasams-frontend 
+      - name: Build Angular application
+        # 1. We assume 'npm run build' is defined in the package.json.
+        # 2. '--base-href' is essential for GitHub Pages to correctly load assets (like CSS/JS) 
+        #    since the repository name is part of the final URL.
+        run: npm run build -- --base-href=/SFWE-504-Team-08/
+        working-directory: uasams-frontend
 
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+        # Uses the popular action to deploy a directory to a git branch (gh-pages)
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }} 
-          branch: gh-pages 
-          # The correct path is inside the subdirectory, then inside dist/project-name/browser
-          folder: uasams-frontend/dist/uasams-frontend/browser
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # 🚨 CRITICAL PATH ADJUSTMENT 🚨
+          # This path must be relative to the repository root. Standard Angular CLI outputs to:
+          # <app_folder>/dist/<app_project_name>. 
+          # Assuming your project name is also 'uasams-frontend', this path is correct.
+          # If your project name is different, you must check the folder name inside 'uasams-frontend/dist'.
+          publish_dir: ./uasams-frontend/dist/uasams-frontend 
+          publish_branch: gh-pages # Creates and pushes the built files to the 'gh-pages' branch
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
