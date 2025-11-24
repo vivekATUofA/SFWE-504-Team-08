@@ -1,47 +1,38 @@
-# .github/workflows/deploy.yml
-name: Angular Deploy to GitHub Pages
+name: Deploy Angular Frontend (Develop Branch)
 
 on:
   push:
     branches:
-      - develop # Trigger on pushes to the main branch
+      - develop
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
-
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          # Set cache working directory to the Angular project subdirectory
-          cache-dependency-path: uasams-frontend/package-lock.json
+      # ... (Node setup and Install dependencies steps remain the same) ...
+      
+      - name: Build Angular application (Forced Output Path)
+        # Use the base-href with the trailing slash
+        run: npm run build -- --output-path=deploy-output --base-href=/SFWE-504-Team-08/
+        working-directory: uasams-frontend
 
-      - name: Install Dependencies
-        # Run install command from the Angular project subdirectory
-        run: npm ci
-        working-directory: uasams-frontend 
-
-      - name: Build Angular Production App
-        # Set the Base HREF to /<REPO_NAME>/<SUBDIRECTORY>/
-        # This is the crucial fix for subdirectories
-        run: npx ng build --configuration production --base-href /${{ github.event.repository.name }}/uasams-frontend/
-        working-directory: uasams-frontend 
+      - name: Verify/Fix Base Href in index.html
+        # Navigate to the built files and ensure the base href tag is correct
+        run: |
+          TARGET_DIR="./uasams-frontend/deploy-output"
+          # Use sed to replace the base href tag with the correct value
+          sed -i 's|<base href="/">|<base href="/SFWE-504-Team-08/">|g' $TARGET_DIR/index.html
+          echo "Updated base href in index.html"
 
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }} 
-          branch: gh-pages 
-          # The correct path is inside the subdirectory, then inside dist/project-name/browser
-          folder: uasams-frontend/dist/uasams-frontend/browser
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./uasams-frontend/deploy-output 
+          publish_branch: gh-pages
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
