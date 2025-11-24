@@ -7,7 +7,6 @@ import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 
 @NgModule({
-  // Since LoginComponent and RegisterComponent are standalone, 
   // the declarations array is removed. We import them directly.
   imports: [
     CommonModule,
