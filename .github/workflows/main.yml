@@ -3,7 +3,7 @@ name: Deploy Angular Frontend (Develop Branch)
 on:
   push:
     branches:
-      - develop # ➡️ CRUCIAL: Only runs when code is pushed to the 'develop' branch
+      - develop
 
 jobs:
   build-and-deploy:
@@ -11,38 +11,30 @@ jobs:
     
     steps:
       - name: Checkout code
-        # Checks out the repository and allows subsequent steps to access the files
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        # Ensures the environment has the necessary Node.js version
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Install dependencies
-        # 1. The 'working-directory' tells the runner to execute the command inside 'uasams-frontend'
+        # Runs 'npm install' inside the subfolder
         run: npm install
         working-directory: uasams-frontend
 
-      - name: Build Angular application
-        # 1. We assume 'npm run build' is defined in the package.json.
-        # 2. '--base-href' is essential for GitHub Pages to correctly load assets (like CSS/JS) 
-        #    since the repository name is part of the final URL.
-        run: npm run build -- --base-href=/SFWE-504-Team-08/
+      - name: Build Angular application (Forced Output Path)
+        # 1. We force the output to a simple folder: 'uasams-frontend/deploy-output'
+        # 2. --base-href is set for GitHub Pages
+        run: npm run build -- --output-path=deploy-output --base-href=/SFWE-504-Team-08/
         working-directory: uasams-frontend
-
+        
       - name: Deploy to GitHub Pages
-        # Uses the popular action to deploy a directory to a git branch (gh-pages)
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # 🚨 CRITICAL PATH ADJUSTMENT 🚨
-          # This path must be relative to the repository root. Standard Angular CLI outputs to:
-          # <app_folder>/dist/<app_project_name>. 
-          # Assuming your project name is also 'uasams-frontend', this path is correct.
-          # If your project name is different, you must check the folder name inside 'uasams-frontend/dist'.
-          publish_dir: ./uasams-frontend/dist/uasams-frontend 
-          publish_branch: gh-pages # Creates and pushes the built files to the 'gh-pages' branch
+          # 🎯 UPDATED PATH: This now points to the explicitly created output folder
+          publish_dir: ./uasams-frontend/deploy-output 
+          publish_branch: gh-pages
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
