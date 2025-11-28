@@ -3,7 +3,7 @@ name: Deploy Angular Frontend (Develop Branch)
 on:
   push:
     branches:
-      - develop # Only runs when code is pushed to the 'develop' branch
+      - develop
 
 jobs:
   build-and-deploy:
@@ -23,27 +23,39 @@ jobs:
         run: npm install
         working-directory: uasams-frontend
 
-      - name: Build Angular application
-        # Build the application, forcing the output path and setting the base-href.
-        # The base-href MUST match your repository name and end with a slash.
+      - name: Build Angular application (Using correct base-href)
+        # We must use --base-href here because the built asset paths 
+        # (like favicon) may still be incorrect without it, even if index.html is fixed.
         run: npm run build -- --output-path=deploy-output --base-href=/SFWE-504-Team-08/
         working-directory: uasams-frontend
 
-      - name: Verify/Fix Base Href in index.html (Crucial Fix for 404s)
-        # This step uses 'sed' to ensure the <base href> tag in the final index.html 
-        # points exactly to the repository subpath required by GitHub Pages.
+      - name: Define Publish Directory
+        # CRITICAL STEP: Dynamically find the exact folder that contains index.html.
+        # Angular often nests the final deployable content inside 'browser/' 
+        # within the output folder.
+        id: find_publish_dir
         run: |
-          TARGET_DIR="./uasams-frontend/deploy-output"
-          # Replace <base href="/"> with <base href="/SFWE-504-Team-08/">
-          sed -i 's|<base href="/">|<base href="/SFWE-504-Team-08/">|g' $TARGET_DIR/index.html
-          echo "Base href successfully corrected in $TARGET_DIR/index.html"
+          BUILD_ROOT="./uasams-frontend/deploy-output"
+          
+          # Find the actual directory containing index.html (e.g., ./uasams-frontend/deploy-output/browser)
+          PUBLISH_DIR=$(find $BUILD_ROOT -name index.html -print -quit | xargs dirname)
+          
+          # Check if the folder was found
+          if [ -z "$PUBLISH_DIR" ]; then
+            echo "::error::Could not find index.html inside $BUILD_ROOT or its subdirectories. Deployment will fail."
+            exit 1
+          fi
+          
+          echo "Found publish directory: $PUBLISH_DIR"
+          # Set the path as an output variable for the next step
+          echo "PUBLISH_DIR=$PUBLISH_DIR" >> $GITHUB_OUTPUT
 
       - name: Deploy to GitHub Pages
-        # Deploy the contents of the forced output directory to the gh-pages branch
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./uasams-frontend/deploy-output 
+          # Use the dynamically found path, e.g., ./uasams-frontend/deploy-output/browser
+          publish_dir: ${{ steps.find_publish_dir.outputs.PUBLISH_DIR }}
           publish_branch: gh-pages
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
